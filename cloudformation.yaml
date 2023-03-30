@@ -207,7 +207,7 @@ Resources:
     Properties:
       Roles:
         - Ref: InstanceRole
- kiens
+
   ###################################
   # Amazon IVS
   ###################################
