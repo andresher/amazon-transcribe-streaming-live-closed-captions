@@ -82,7 +82,7 @@ let totalCaptions = 0;
 const m3u = m3u8.M3U.create();
 
 /* */
-const kinesisClient = new KinesisClient({ region: REGION });
+const kinesisClient = new KinesisClient({ region: 'us-east-1' });
 
 /* Write SRT from Transcrpt _only_ every chunk */
 
@@ -223,13 +223,6 @@ const generateSRTFifo = async (transcript) => {
 
   console.log(srtOutput);
   fs.writeSync(fifoWs, utf8.encode(srtOutput));
-  const kinesisPutRecordInput = {
-    StreamARN: 'arn:aws:kinesis:us-east-1:657700035295:stream/stream-closed-captions',
-    Data: srtOutput,
-    PartitionKey: 'streamId'
-  };
-  const kinesisPutCommand = new PutRecordCommand(kinesisPutRecordInput);
-  await kinesisClient.send(kinesisPutCommand);
 };
 
 const generateSRTForSegment = async (filePath, segmentNumber) => {
@@ -520,6 +513,15 @@ const startTranscribe = async function startTranscribe() {
         } else {
           currentTranscriptSegment = undefined;
           transcripts.push(transcript);
+          const kinesisPutRecordInput = {
+            StreamName: 'stream-closed-captions',
+            Data: Buffer.from(JSON.stringify(text)),
+            PartitionKey: '0'
+          };
+          console.log(kinesisPutRecordInput);
+          const kinesisPutCommand = new PutRecordCommand(kinesisPutRecordInput);
+          const response = await kinesisClient.send(kinesisPutCommand);
+          console.log(response);
         }
 
         if (isFifo) {
