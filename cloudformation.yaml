@@ -298,7 +298,7 @@ Resources:
               apt install build-essential -y
               apt install -y cmake
               cd /
-              git clone https://github.com/aws-samples/amazon-transcribe-streaming-live-closed-captions transcribe
+              git clone https://github.com/andresher/amazon-transcribe-streaming-live-closed-captions.git transcribe
               setfacl -R -m u:www-data:rwx /transcribe
               cd /transcribe
               chmod +x start.sh
