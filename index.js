@@ -25,6 +25,7 @@
 /* require for packages */
 const chokidar = require('chokidar');
 const { TranscribeStreamingClient, StartStreamTranscriptionCommand } = require('@aws-sdk/client-transcribe-streaming');
+const { KinesisClient, PutRecordCommand } = require("@aws-sdk/client-kinesis");
 const stream = require('stream');
 const fs = require('fs');
 const path = require('path');
@@ -79,6 +80,9 @@ let snappedPartials = [];
 let totalCaptions = 0;
 
 const m3u = m3u8.M3U.create();
+
+/* */
+const kinesisClient = new KinesisClient({ region: REGION });
 
 /* Write SRT from Transcrpt _only_ every chunk */
 
@@ -193,7 +197,7 @@ if (isFifo) {
   console.log(`opening write stream to ${fifoFileName}`);
 }
 
-const generateSRTFifo = (transcript) => {
+const generateSRTFifo = async (transcript) => {
   // console.log('generating srt');
   totalCaptions += 1;
 
@@ -219,6 +223,13 @@ const generateSRTFifo = (transcript) => {
 
   console.log(srtOutput);
   fs.writeSync(fifoWs, utf8.encode(srtOutput));
+  const kinesisPutRecordInput = {
+    StreamARN: 'arn:aws:kinesis:us-east-1:657700035295:stream/stream-closed-captions',
+    Data: srtOutput,
+    PartitionKey: 'streamId'
+  };
+  const kinesisPutCommand = new PutRecordCommand(kinesisPutRecordInput);
+  await kinesisClient.send(kinesisPutCommand);
 };
 
 const generateSRTForSegment = async (filePath, segmentNumber) => {
@@ -512,7 +523,7 @@ const startTranscribe = async function startTranscribe() {
         }
 
         if (isFifo) {
-          generateSRTFifo(transcript);
+          await generateSRTFifo(transcript);
         }
       }
     }
